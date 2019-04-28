@@ -1,6 +1,7 @@
 package history
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -32,16 +33,23 @@ func NewRecorder() *Recorder {
 	}
 }
 
+func rcfile() (string, error) {
+	home, err := homedir.Dir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, ".0x81"), nil
+}
+
 func (item *Item) String() string {
 	return fmt.Sprintf("[green]%s[white]  %s", item.Time.Format(timeFormat), item.Text)
 }
 
 func (r *Recorder) Open() error {
-	home, err := homedir.Dir()
+	path, err := rcfile()
 	if err != nil {
 		return err
 	}
-	path := filepath.Join(home, ".0x81")
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_RDWR, os.ModePerm)
 	if err != nil {
 		return err
@@ -51,11 +59,15 @@ func (r *Recorder) Open() error {
 }
 
 func (r Recorder) Close() error {
-	err := r.file.Sync()
+	path, err := rcfile()
 	if err != nil {
 		return err
 	}
-	return r.file.Close()
+	buffer := &bytes.Buffer{}
+	for _, item := range r.Items() {
+		_, _ = buffer.WriteString(fmt.Sprintf("%d|%s\n", item.Time.Unix(), item.Text))
+	}
+	return ioutil.WriteFile(path, buffer.Bytes(), os.ModePerm)
 }
 
 func (r *Recorder) find(text string) int {
@@ -66,6 +78,20 @@ func (r *Recorder) find(text string) int {
 	return index
 }
 
+func (r *Recorder) Delete(index int) bool {
+	if index >= len(r.sorted) {
+		return false
+	}
+	item := r.sorted[index]
+	delete(r.unique, item.Text)
+	if index < len(r.sorted)-1 {
+		copy(r.sorted[index:], r.sorted[index+1:])
+	}
+	r.sorted = r.sorted[:len(r.sorted)-1]
+	r.Resort()
+	return true
+}
+
 func (r *Recorder) Record(now time.Time, text string) {
 	if index := r.find(text); index < 0 {
 		r.sorted = append(r.sorted, Item{Text: text, Time: now})
@@ -73,7 +99,6 @@ func (r *Recorder) Record(now time.Time, text string) {
 		r.sorted[index].Time = now
 	}
 	r.Resort()
-	_, _ = r.file.WriteString(fmt.Sprintf("%d|%s\n", now.Unix(), text))
 }
 
 func (r *Recorder) Resort() {
@@ -91,11 +116,14 @@ func (r *Recorder) Items() []Item {
 }
 
 func (r *Recorder) Load() error {
-	content, err := ioutil.ReadAll(r.file)
+	path, err := rcfile()
 	if err != nil {
 		return err
 	}
-
+	content, err := ioutil.ReadFile(path)
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
 	lines := strings.Split(string(content), "\n")
 	var items []Item
 	for _, line := range lines {

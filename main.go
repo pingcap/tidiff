@@ -103,7 +103,11 @@ func serve(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	defer recorder.Close()
+	defer func() {
+		if err := recorder.Close(); err != nil {
+			log.Println(err.Error())
+		}
+	}()
 
 	mysql, err := sql.Open("mysql", dsn("mysql", ctx))
 	if err != nil {

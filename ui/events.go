@@ -6,9 +6,11 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/gdamore/tcell"
+	"github.com/lonng/0x81/directive"
 	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
@@ -57,6 +59,17 @@ func (ui *UI) handleHistory(event *tcell.EventKey) *tcell.EventKey {
 	switch event.Key() {
 	case tcell.KeyESC:
 		app.SetFocus(sqlStmt)
+	case tcell.KeyBackspace, tcell.KeyBackspace2:
+		index := ui.history.GetCurrentItem()
+		if !ui.recorder.Delete(index) {
+			break
+		}
+		ui.renderHistory()
+		if index < ui.history.GetItemCount() {
+			ui.history.SetCurrentItem(index)
+		} else if index > 0 {
+			ui.history.SetCurrentItem(index - 1)
+		}
 	case tcell.KeyEnter:
 		text, _ := history.GetItemText(history.GetCurrentItem())
 		sqlStmt.SetText(text[35:])
@@ -221,33 +234,46 @@ func (ui *UI) query(text string) {
 	ui.tidbPanel.Highlight()
 }
 
-// If the statement appear in history, just move to the head
-func (ui *UI) uniqueHistory() {
-
-}
-
 func (ui *UI) sqlStmtDone(key tcell.Key) {
 	if key != tcell.KeyEnter {
 		return
 	}
 
-	history := ui.history
 	sqlStmt := ui.sqlStmt
-	text := sqlStmt.GetText()
-	if strings.TrimSpace(text) == "" {
+	query := strings.TrimSpace(sqlStmt.GetText())
+	if query == "" {
 		return
 	}
 
-	ui.query(text)
+	// Parse directive if query start with `!`
+	if query[0] == '!' {
+		text := query[1:]
+		temp, err := template.New("query-template").Funcs(directive.Functions).Parse(text)
+		if err != nil {
+			panic(err)
+		}
+		out := bytes.Buffer{}
+		if err := temp.Execute(&out, nil); err != nil {
+			panic(err)
+		}
+		ui.query(out.String())
+	} else {
+		ui.query(query)
+	}
 
-	ui.recorder.Record(time.Now(), text)
+	ui.recorder.Record(time.Now(), query)
+	ui.renderHistory()
+	ui.history.SetCurrentItem(0)
+	sqlStmt.SetText("")
+}
+
+func (ui *UI) renderHistory() {
+	history := ui.history
 	history.Clear()
 	items := ui.recorder.Items()
 	for _, item := range items {
 		history.AddItem(item.String(), "", 0, nil)
 	}
-	history.SetCurrentItem(0)
-	sqlStmt.SetText("")
 }
 
 func (ui *UI) sqlStmtKey(event *tcell.EventKey) *tcell.EventKey {

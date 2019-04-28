@@ -31,8 +31,8 @@ func New(recorder *history.Recorder, mysql, tidb *sql.DB) *UI {
 	}
 }
 
-func (ui UI) Serve() error {
-	err := ui.recorder.Load()
+func (ui UI) Serve() (err error) {
+	err = ui.recorder.Load()
 	if err != nil {
 		return err
 	}

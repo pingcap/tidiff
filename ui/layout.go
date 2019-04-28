@@ -15,8 +15,8 @@ func (ui *UI) layout() {
 	history.SetBorderPadding(0, 0, 1, 1)
 	history.SetSelectedFocusOnly(true)
 	header := tview.NewFlex().SetDirection(tview.FlexRow).
-		AddItem(sqlStmt, 1, 1, false).
-		AddItem(history, 0, 1, false)
+		AddItem(history, 0, 1, false).
+		AddItem(sqlStmt, 1, 1, false)
 
 	// Result sets panels (MySQL result and TiDB results)
 	mysqlPanel := tview.NewTextView()
@@ -52,8 +52,8 @@ func (ui *UI) layout() {
 	ui.query("select version()")
 
 	container := tview.NewFlex().SetDirection(tview.FlexRow).
-		AddItem(header, 0, 2, false).
-		AddItem(resultSets, 0, 5, false)
+		AddItem(resultSets, 0, 5, false).
+		AddItem(header, 0, 2, false)
 
 	ui.app.SetRoot(container, true).SetFocus(sqlStmt)
 }

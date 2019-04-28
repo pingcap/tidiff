@@ -17,6 +17,8 @@ func (ui *UI) handleEvents() {
 	ui.history.SetInputCapture(ui.handleHistory)
 	ui.sqlStmt.SetDoneFunc(ui.sqlStmtDone)
 	ui.sqlStmt.SetInputCapture(ui.sqlStmtKey)
+	ui.mysqlPanel.SetInputCapture(ui.esc)
+	ui.tidbPanel.SetInputCapture(ui.esc)
 }
 
 func (ui *UI) handleApp(event *tcell.EventKey) *tcell.EventKey {
@@ -37,6 +39,14 @@ func (ui *UI) handleApp(event *tcell.EventKey) *tcell.EventKey {
 	index += 1
 	index %= len(focusables)
 	app.SetFocus(focusables[index])
+	return event
+}
+
+func (ui *UI) esc(event *tcell.EventKey) *tcell.EventKey {
+	if event.Key() != tcell.KeyESC {
+		return event
+	}
+	ui.app.SetFocus(ui.sqlStmt)
 	return event
 }
 

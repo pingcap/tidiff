@@ -2,6 +2,8 @@
 
 A tool to compare the result set difference of the same query in TiDB/MySQL
 
+![DEMO](./media/demo.png)
+
 ## Shortcut
 
 - `TAB` switch focus in different panel

@@ -15,8 +15,12 @@ var Functions = map[string]interface{}{
 	"varchar": randstring,
 }
 
-func count(n int) []struct{} {
-	return make([]struct{}, n)
+func count(n int) []int {
+	results := make([]int, n)
+	for i := 0; i < n; i++ {
+		results[i] = i
+	}
+	return results
 }
 
 func first(x int) bool {
@@ -39,13 +43,15 @@ func randint(min, rg int) int {
 	return min + rand.Intn(rg)
 }
 
+var chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
 func randnstring(n int) string {
 	if n <= 0 {
 		return ""
 	}
 	result := make([]byte, n)
 	for i := range result {
-		result[i] = 'A' + byte(rand.Intn(int('z'-'A')))
+		result[i] = chars[rand.Intn(len(chars))]
 	}
 	return string(result)
 }

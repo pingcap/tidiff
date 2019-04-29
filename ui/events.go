@@ -72,6 +72,10 @@ func (ui *UI) handleHistory(event *tcell.EventKey) *tcell.EventKey {
 		}
 	case tcell.KeyEnter:
 		text, _ := history.GetItemText(history.GetCurrentItem())
+		if strings.HasSuffix(text, "*/") {
+			lastIndex := strings.LastIndex(text, "/*->")
+			text = text[:lastIndex]
+		}
 		sqlStmt.SetText(text[35:])
 		app.SetFocus(sqlStmt)
 	}
@@ -239,8 +243,7 @@ func (ui *UI) sqlStmtDone(key tcell.Key) {
 		return
 	}
 
-	sqlStmt := ui.sqlStmt
-	query := strings.TrimSpace(sqlStmt.GetText())
+	query := strings.TrimSpace(ui.sqlStmt.GetText())
 	if query == "" {
 		return
 	}
@@ -250,21 +253,25 @@ func (ui *UI) sqlStmtDone(key tcell.Key) {
 		text := query[1:]
 		temp, err := template.New("query-template").Funcs(directive.Functions).Parse(text)
 		if err != nil {
-			panic(err)
+			ui.recordHistory(fmt.Sprintf("%s /*->[red] %s[white]*/", query, err.Error()))
+			return
 		}
 		out := bytes.Buffer{}
 		if err := temp.Execute(&out, nil); err != nil {
-			panic(err)
+			ui.recordHistory(fmt.Sprintf("%s /*->[red] %s[white]*/", query, err.Error()))
 		}
 		ui.query(out.String())
 	} else {
 		ui.query(query)
 	}
+	ui.recordHistory(query)
+}
 
+func (ui *UI) recordHistory(query string) {
 	ui.recorder.Record(time.Now(), query)
 	ui.renderHistory()
 	ui.history.SetCurrentItem(0)
-	sqlStmt.SetText("")
+	ui.sqlStmt.SetText("")
 }
 
 func (ui *UI) renderHistory() {

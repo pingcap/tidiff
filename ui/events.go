@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/gdamore/tcell"
-	"github.com/lonng/0x81/directive"
+	"github.com/lonng/tidiff/directive"
 	"github.com/sergi/go-diff/diffmatchpatch"
 )
 

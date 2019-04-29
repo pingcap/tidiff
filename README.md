@@ -1,4 +1,4 @@
-# 0x81
+# tidiff
 
 A tool to compare the result set difference of the same query in TiDB/MySQL
 

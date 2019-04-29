@@ -1,4 +1,4 @@
-module github.com/lonng/0x81
+module github.com/lonng/tidiff
 
 require (
 	github.com/gdamore/tcell v1.1.1

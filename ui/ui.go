@@ -3,7 +3,7 @@ package ui
 import (
 	"database/sql"
 
-	"github.com/lonng/0x81/history"
+	"github.com/lonng/tidiff/history"
 	"github.com/rivo/tview"
 )
 

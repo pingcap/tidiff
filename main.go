@@ -7,8 +7,8 @@ import (
 	"os"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/lonng/0x81/history"
-	"github.com/lonng/0x81/ui"
+	"github.com/lonng/tidiff/history"
+	"github.com/lonng/tidiff/ui"
 	"github.com/urfave/cli"
 )
 

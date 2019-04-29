@@ -38,7 +38,7 @@ func rcfile() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, ".0x81"), nil
+	return filepath.Join(home, ".tidiff"), nil
 }
 
 func (item *Item) String() string {

@@ -2,9 +2,27 @@
 
 A tool to compare the result set difference of the same query in TiDB/MySQL
 
+## Command Line Mode
+
+DEMO
+
+```sh
+tidiff 'show tables'
+# ceate a table in test database
+tidiff 'create table tt1000 (a bigint(20) not null auto_increment primary key, b varchar(20) not null, c bigint(20))'
+# random generate 1000 rows in the `tt1000`
+tidiff '! {{$count:=count 20}} insert into tt1000 values {{range $index := $count}} (NULL, "{{varchar 20}}", "{{int 100000 100000000}}"){{if head $index $count}},{{end}}{{end}}'
+# same results
+tidiff 'select * from tt1000 limit 5'
+# results with diff
+tidiff 'select * from tt1000 order by rand() limit 5'
+```
+
+You can use command line mode as downstream pipeline, e.g: `randgen | xargs tididff`. SQL statement should be quote with `'` instead of `"`.
+
 ![DEMO](./media/demo.png)
 
-## Shortcut
+## UI Mode Shortcuts
 
 - `TAB` switch focus in different panel
 - `ESC` focus SQL input panel
@@ -18,7 +36,7 @@ A tool to compare the result set difference of the same query in TiDB/MySQL
 - Highlight the diff in result sets
 - Support `!` directive, which enable the template support for query, e.g:
 
-    `! {{$count=count 10}} insert into t values {{range $index := $count}}({{int 10 100}}){{if head $index $count}},{{end}}{{end}}`
+    `! {{$count:=count 10}} insert into t values {{range $index := $count}}({{int 10 100}}){{if head $index $count}},{{end}}{{end}}`
     `!! select period_add({{ int 10000 200000}}, {{int 100 10000}})` will show the generated sql, e.g: `period_add(108081, 7987)`
     
 - Template functions

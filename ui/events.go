@@ -2,15 +2,11 @@ package ui
 
 import (
 	"bytes"
-	"context"
-	"database/sql"
 	"fmt"
 	"strings"
-	"text/template"
 	"time"
 
 	"github.com/gdamore/tcell"
-	"github.com/lonng/tidiff/directive"
 	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
@@ -82,137 +78,22 @@ func (ui *UI) handleHistory(event *tcell.EventKey) *tcell.EventKey {
 	return event
 }
 
-type queryResult struct {
-	result   *sql.Rows
-	error    error
-	duration time.Duration
-	rowcount int
-}
-
-func (result *queryResult) stat() string {
-	if result.error != nil {
-		return fmt.Sprintf("failure (%.3f sec)", result.duration.Seconds())
-	}
-	return fmt.Sprintf("%d row in set (%.3f sec)", result.rowcount, result.duration.Seconds())
-}
-
-func (result *queryResult) content() string {
-	if result.error != nil {
-		return result.error.Error()
-	}
-	cols, err := result.result.Columns()
-	if err != nil {
-		return err.Error()
-	}
-	var allRows [][][]byte
-	for result.result.Next() {
-		var columns = make([][]byte, len(cols))
-		var pointer = make([]interface{}, len(cols))
-		for i := range columns {
-			pointer[i] = &columns[i]
-		}
-		err := result.result.Scan(pointer...)
-		if err != nil {
-			return err.Error()
-		}
-		allRows = append(allRows, columns)
-		result.rowcount++
-	}
-	if result.rowcount < 1 {
-		return "Empty set"
-	}
-
-	// Calculate the max column length
-	var colLength []int
-	for _, c := range cols {
-		colLength = append(colLength, len(c))
-	}
-	for _, row := range allRows {
-		for n, col := range row {
-			if l := len(col); colLength[n] < l {
-				colLength[n] = l
-			}
-		}
-	}
-	// The total length
-	var total = len(cols) - 1
-	for index := range colLength {
-		colLength[index] += 2 // Value will wrap with space
-		total += colLength[index]
-	}
-
-	var lines []string
-	var push = func(line string) {
-		lines = append(lines, line)
-	}
-
-	// Write table header
-	var header string
-	for index, col := range cols {
-		length := colLength[index]
-		padding := length - 1 - len(col)
-		if index == 0 {
-			header += "|"
-		}
-		header += " " + col + strings.Repeat(" ", padding) + "|"
-	}
-	splitLine := "+" + strings.Repeat("-", total) + "+"
-	push(splitLine)
-	push(header)
-	push(splitLine)
-
-	// Write rows data
-	for _, row := range allRows {
-		var line string
-		for index, col := range row {
-			length := colLength[index]
-			padding := length - 1 - len(col)
-			if index == 0 {
-				line += "|"
-			}
-			line += " " + string(col) + strings.Repeat(" ", padding) + "|"
-		}
-		push(line)
-	}
-	push(splitLine)
-	return strings.Join(lines, "\n")
-}
-
-func (result *queryResult) close() {
-	if result.result == nil {
+func (ui *UI) query(query string) {
+	if query == "" {
 		return
 	}
-	result.result.Close()
-}
 
-func (ui *UI) query(text string) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	mysqlResultCh := make(chan queryResult)
-	tidbResultCh := make(chan queryResult)
-	go func() {
-		start := time.Now()
-		rows, err := ui.mysql.QueryContext(ctx, text)
-		duration := time.Since(start)
-		mysqlResultCh <- queryResult{result: rows, error: err, duration: duration}
-	}()
-
-	go func() {
-		start := time.Now()
-		rows, err := ui.tidb.QueryContext(ctx, text)
-		duration := time.Since(start)
-		tidbResultCh <- queryResult{result: rows, error: err, duration: duration}
-	}()
-
-	mysqlResult := <-mysqlResultCh
-	tidbResult := <-tidbResultCh
-	defer mysqlResult.close()
-	defer tidbResult.close()
+	mysqlResult, tidbResult, err := ui.executor.Query(query)
+	if err != nil {
+		ui.recordHistory(fmt.Sprintf("%s /*->[red] %s[white]*/", query, err.Error()))
+		return
+	}
+	defer mysqlResult.Close()
+	defer tidbResult.Close()
 
 	// Highlight diff
-	mysqlContent, tidbContent := mysqlResult.content(), tidbResult.content()
-	if mysqlResult.error == nil && tidbResult.error == nil {
+	mysqlContent, tidbContent := mysqlResult.Content(), tidbResult.Content()
+	if mysqlResult.Error == nil && tidbResult.Error == nil {
 		patch := diffmatchpatch.New()
 		diff := patch.DiffMain(mysqlContent, tidbContent, false)
 		if ui.recorder.IsDiffEnable() {
@@ -233,46 +114,23 @@ func (ui *UI) query(text string) {
 		mysqlContent = newMySQLContent.String()
 		tidbContent = newTiDBContent.String()
 	}
-	mysqlStat, tidbStat := mysqlResult.stat(), tidbResult.stat()
+
+	if strings.HasPrefix(query, "!!") {
+		fmt.Fprintln(ui.mysqlPanel, "> "+mysqlResult.Rendered)
+		fmt.Fprintln(ui.tidbPanel, "> "+tidbResult.Rendered)
+	}
 	fmt.Fprintln(ui.mysqlPanel, mysqlContent)
-	fmt.Fprintln(ui.mysqlPanel, mysqlStat+"\n")
+	fmt.Fprintln(ui.mysqlPanel, mysqlResult.Stat()+"\n")
 	fmt.Fprintln(ui.tidbPanel, tidbContent)
-	fmt.Fprintln(ui.tidbPanel, tidbStat+"\n")
-	ui.tidbPanel.Highlight()
+	fmt.Fprintln(ui.tidbPanel, tidbResult.Stat()+"\n")
+	ui.recordHistory(query)
 }
 
 func (ui *UI) sqlStmtDone(key tcell.Key) {
 	if key != tcell.KeyEnter {
 		return
 	}
-
-	query := strings.TrimSpace(ui.sqlStmt.GetText())
-	if query == "" {
-		return
-	}
-
-	// Parse directive if query start with `!`
-	if len(query) > 1 && query[0] == '!' {
-		text := strings.TrimLeft(query, "!")
-		temp, err := template.New("query-template").Funcs(directive.Functions).Parse(text)
-		if err != nil {
-			ui.recordHistory(fmt.Sprintf("%s /*->[red] %s[white]*/", query, err.Error()))
-			return
-		}
-		out := bytes.Buffer{}
-		if err := temp.Execute(&out, nil); err != nil {
-			ui.recordHistory(fmt.Sprintf("%s /*->[red] %s[white]*/", query, err.Error()))
-			return
-		}
-		text = strings.TrimSpace(out.String())
-		// Will print query to console if start with `!!`
-		fmt.Fprintln(ui.mysqlPanel, "> "+text)
-		fmt.Fprintln(ui.tidbPanel, "> "+text)
-		ui.query(text)
-	} else {
-		ui.query(query)
-	}
-	ui.recordHistory(query)
+	ui.query(strings.TrimSpace(ui.sqlStmt.GetText()))
 }
 
 func (ui *UI) recordHistory(query string) {

@@ -3,6 +3,7 @@ package ui
 import (
 	"database/sql"
 
+	"github.com/lonng/tidiff/executor"
 	"github.com/lonng/tidiff/history"
 	"github.com/rivo/tview"
 )
@@ -10,6 +11,7 @@ import (
 type UI struct {
 	app      *tview.Application
 	recorder *history.Recorder
+	executor *executor.Executor
 	mysql    *sql.DB
 	tidb     *sql.DB
 
@@ -22,10 +24,11 @@ type UI struct {
 	focusables []tview.Primitive
 }
 
-func New(recorder *history.Recorder, mysql, tidb *sql.DB) *UI {
+func New(recorder *history.Recorder, exec *executor.Executor, mysql, tidb *sql.DB) *UI {
 	return &UI{
 		app:      tview.NewApplication(),
 		recorder: recorder,
+		executor: exec,
 		mysql:    mysql,
 		tidb:     tidb,
 	}

@@ -1,14 +1,19 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
+	"github.com/fatih/color"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/lonng/tidiff/executor"
 	"github.com/lonng/tidiff/history"
 	"github.com/lonng/tidiff/ui"
+	"github.com/sergi/go-diff/diffmatchpatch"
 	"github.com/urfave/cli"
 )
 
@@ -41,7 +46,7 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:  "mysql.db",
-			Value: "",
+			Value: "test",
 			Usage: "MySQL database",
 		},
 		cli.StringFlag{
@@ -71,7 +76,7 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:  "tidb.db",
-			Value: "",
+			Value: "test",
 			Usage: "TiDB database",
 		},
 		cli.StringFlag{
@@ -103,9 +108,58 @@ func dsn(dialect string, ctx *cli.Context) string {
 }
 
 func serve(ctx *cli.Context) error {
-	recorder := history.NewRecorder()
-	err := recorder.Open()
+	mysql, err := sql.Open("mysql", dsn("mysql", ctx))
 	if err != nil {
+		return err
+	}
+	tidb, err := sql.Open("mysql", dsn("tidb", ctx))
+	if err != nil {
+		return err
+	}
+	exec := executor.NewExecutor(mysql, tidb)
+
+	// Command line mode
+	if args := ctx.Args(); len(args) > 0 {
+		query := strings.Join(args, " ")
+		mysqlResult, tidbResult, err := exec.Query(query)
+		if err != nil {
+			return err
+		}
+		defer mysqlResult.Close()
+		defer tidbResult.Close()
+		mysqlContent, tidbContent := mysqlResult.Content(), tidbResult.Content()
+		if mysqlResult.Error == nil && tidbResult.Error == nil {
+			green := color.New(color.FgGreen).SprintFunc()
+			red := color.New(color.FgRed).SprintFunc()
+			patch := diffmatchpatch.New()
+			diff := patch.DiffMain(mysqlContent, tidbContent, false)
+			var newMySQLContent, newTiDBContent bytes.Buffer
+			for _, d := range diff {
+				switch d.Type {
+				case diffmatchpatch.DiffEqual:
+					newMySQLContent.WriteString(d.Text)
+					newTiDBContent.WriteString(d.Text)
+				case diffmatchpatch.DiffDelete:
+					newMySQLContent.WriteString(red(d.Text))
+				case diffmatchpatch.DiffInsert:
+					newTiDBContent.WriteString(green(d.Text))
+				}
+			}
+			mysqlContent = newMySQLContent.String()
+			tidbContent = newTiDBContent.String()
+		}
+		fmt.Println("MySQL> " + mysqlResult.Rendered)
+		fmt.Println(mysqlContent)
+		fmt.Println(mysqlResult.Stat() + "\n")
+		fmt.Println("TiDB> " + tidbResult.Rendered)
+		fmt.Println(tidbContent)
+		fmt.Println(tidbResult.Stat() + "\n")
+		return nil
+	}
+
+	// User interface mode
+	recorder := history.NewRecorder()
+	if err := recorder.Open(); err != nil {
 		return err
 	}
 	defer func() {
@@ -120,16 +174,8 @@ func serve(ctx *cli.Context) error {
 			log.Fatal(err)
 		}
 		recorder.SetDiff(diff)
+		defer diff.Close()
 	}
 
-	mysql, err := sql.Open("mysql", dsn("mysql", ctx))
-	if err != nil {
-		return err
-	}
-	tidb, err := sql.Open("mysql", dsn("tidb", ctx))
-	if err != nil {
-		return err
-	}
-
-	return ui.New(recorder, mysql, tidb).Serve()
+	return ui.New(recorder, exec, mysql, tidb).Serve()
 }

@@ -9,7 +9,6 @@ func (ui *UI) layout() {
 	// Header panels (sql statement input field and history panel)
 	sqlStmt := tview.NewInputField()
 	sqlStmt.SetLabel("SQL> ").SetFieldBackgroundColor(tcell.ColorBlack)
-	sqlStmt.SetFieldWidth(0)
 	history := tview.NewList()
 	history.SetBorder(true).SetTitle("History")
 	history.ShowSecondaryText(false)

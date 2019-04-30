@@ -250,7 +250,7 @@ func (ui *UI) sqlStmtDone(key tcell.Key) {
 
 	// Parse directive if query start with `!`
 	if len(query) > 1 && query[0] == '!' {
-		text := strings.TrimLeft(query, "! ")
+		text := strings.TrimLeft(query, "!")
 		temp, err := template.New("query-template").Funcs(directive.Functions).Parse(text)
 		if err != nil {
 			ui.recordHistory(fmt.Sprintf("%s /*->[red] %s[white]*/", query, err.Error()))
@@ -261,11 +261,11 @@ func (ui *UI) sqlStmtDone(key tcell.Key) {
 			ui.recordHistory(fmt.Sprintf("%s /*->[red] %s[white]*/", query, err.Error()))
 			return
 		}
-		sql := out.String()
+		text = strings.TrimSpace(out.String())
 		// Will print query to console if start with `!!`
-		fmt.Fprintln(ui.mysqlPanel, "> "+sql)
-		fmt.Fprintln(ui.tidbPanel, "> "+sql)
-		ui.query(sql)
+		fmt.Fprintln(ui.mysqlPanel, "> "+text)
+		fmt.Fprintln(ui.tidbPanel, "> "+text)
+		ui.query(text)
 	} else {
 		ui.query(query)
 	}

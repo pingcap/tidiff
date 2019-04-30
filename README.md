@@ -19,6 +19,7 @@ A tool to compare the result set difference of the same query in TiDB/MySQL
 - Support `!` directive, which enable the template support for query, e.g:
 
     `! {{$count=count 10}} insert into t values {{range $index := $count}}({{int 10 100}}){{if head $index $count}},{{end}}{{end}}`
+    `!! select period_add({{ int 10000 200000}}, {{int 100 10000}})` will show the generated sql, e.g: `period_add(108081, 7987)`
     
 - Template functions
 
@@ -27,7 +28,7 @@ A tool to compare the result set difference of the same query in TiDB/MySQL
     - `last index slice`returns whether `index` is the last element of the `slice`
     - `head index slice`returns whether `index` is the head element of the `slice`
     - `tail index slice`returns whether `index` is the tail element of the `slice`
-    - `int min range`returns an int which in `[min, min+range)`
+    - `int min max`returns an int which in `[min, max)`
     - `char length`returns a rand string which length is `length`
     - `varchar length`returns a rand string which length in `[length/2, length)`
     

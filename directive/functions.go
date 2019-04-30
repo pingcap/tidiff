@@ -39,8 +39,11 @@ func tail(x int) bool {
 	return x > 0
 }
 
-func randint(min, rg int) int {
-	return min + rand.Intn(rg)
+func randint(min, max int) int {
+	if max <= min {
+		return min
+	}
+	return min + rand.Intn(max-min)
 }
 
 var chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"

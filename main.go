@@ -120,6 +120,8 @@ func serve(ctx *cli.Context) error {
 
 	// Command line mode
 	if args := ctx.Args(); len(args) > 0 {
+		mysqlAddr := fmt.Sprintf("%v:%v", ctx.String("mysql.host"), ctx.Int("mysql.port"))
+		tidbAddr := fmt.Sprintf("%v:%v", ctx.String("tidb.host"), ctx.Int("tidb.port"))
 		query := strings.Join(args, " ")
 		mysqlResult, tidbResult, err := exec.Query(query)
 		if err != nil {
@@ -148,10 +150,10 @@ func serve(ctx *cli.Context) error {
 			mysqlContent = newMySQLContent.String()
 			tidbContent = newTiDBContent.String()
 		}
-		fmt.Println("MySQL> " + mysqlResult.Rendered)
+		fmt.Println(fmt.Sprintf("MySQL(%s)> %s", mysqlAddr, mysqlResult.Rendered))
 		fmt.Println(mysqlContent)
 		fmt.Println(mysqlResult.Stat() + "\n")
-		fmt.Println("TiDB> " + tidbResult.Rendered)
+		fmt.Println(fmt.Sprintf("TiDB(%s)> %s", tidbAddr, tidbResult.Rendered))
 		fmt.Println(tidbContent)
 		fmt.Println(tidbResult.Stat() + "\n")
 		return nil

@@ -18,6 +18,7 @@ const timeFormat = "2006-01-02 15:04:05"
 
 type Recorder struct {
 	file   *os.File
+	diff   *os.File
 	unique map[string]int
 	sorted []Item
 }
@@ -43,6 +44,21 @@ func rcfile() (string, error) {
 
 func (item *Item) String() string {
 	return fmt.Sprintf("[green]%s[white]  %s", item.Time.Format(timeFormat), item.Text)
+}
+
+func (r *Recorder) SetDiff(diff *os.File) {
+	r.diff = diff
+}
+
+func (r *Recorder) IsDiffEnable() bool {
+	return r.diff != nil
+}
+
+func (r *Recorder) LogDiff(diff string) {
+	if r.diff == nil {
+		return
+	}
+	_, _ = r.diff.WriteString(diff)
 }
 
 func (r *Recorder) Open() error {

@@ -215,6 +215,9 @@ func (ui *UI) query(text string) {
 	if mysqlResult.error == nil && tidbResult.error == nil {
 		patch := diffmatchpatch.New()
 		diff := patch.DiffMain(mysqlContent, tidbContent, false)
+		if ui.recorder.IsDiffEnable() {
+			ui.recorder.LogDiff(patch.DiffPrettyText(diff))
+		}
 		var newMySQLContent, newTiDBContent bytes.Buffer
 		for _, d := range diff {
 			switch d.Type {

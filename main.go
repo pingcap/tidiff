@@ -79,6 +79,11 @@ func main() {
 			Value: "charset=utf8mb4",
 			Usage: "TiDB DSN options",
 		},
+		cli.StringFlag{
+			Name:  "log.diff",
+			Value: "",
+			Usage: "Log all query diff to file",
+		},
 	}
 	app.Action = serve
 	if err := app.Run(os.Args); err != nil {
@@ -108,6 +113,14 @@ func serve(ctx *cli.Context) error {
 			log.Println(err.Error())
 		}
 	}()
+
+	if logDiff := ctx.String("log.diff"); logDiff != "" {
+		diff, err := os.OpenFile(logDiff, os.O_CREATE|os.O_WRONLY, os.ModePerm)
+		if err != nil {
+			log.Fatal(err)
+		}
+		recorder.SetDiff(diff)
+	}
 
 	mysql, err := sql.Open("mysql", dsn("mysql", ctx))
 	if err != nil {

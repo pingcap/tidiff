@@ -1,6 +1,7 @@
 module github.com/lonng/tidiff
 
 require (
+	github.com/BurntSushi/toml v0.3.1
 	github.com/fatih/color v1.7.1-0.20181010231311-3f9d52f7176a
 	github.com/gdamore/encoding v1.0.0 // indirect
 	github.com/gdamore/tcell v1.1.1
@@ -13,8 +14,9 @@ require (
 	github.com/rivo/tview v0.0.0-20190406182340-90b4da1bd64c
 	github.com/rivo/uniseg v0.0.0-20190313204849-f699dde9c340 // indirect
 	github.com/sergi/go-diff v1.0.1-0.20180205163309-da645544ed44
-	github.com/urfave/cli v1.20.1-0.20190203184040-693af58b4d51
 	golang.org/x/text v0.3.2 // indirect
+	gopkg.in/urfave/cli.v2 v2.0.0-20180128182452-d3ae77c26ac8
+	gopkg.in/yaml.v2 v2.2.2 // indirect
 )
 
 // Wait upstream fix: https://github.com/gdamore/tcell/issues/200

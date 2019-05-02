@@ -4,87 +4,90 @@ import (
 	"bytes"
 	"database/sql"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/fatih/color"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/lonng/tidiff/config"
 	"github.com/lonng/tidiff/executor"
 	"github.com/lonng/tidiff/history"
 	"github.com/lonng/tidiff/ui"
 	"github.com/sergi/go-diff/diffmatchpatch"
-	"github.com/urfave/cli"
+	"gopkg.in/urfave/cli.v2"
 )
 
 func main() {
-	app := cli.NewApp()
+	app := cli.App{}
 	app.Name = "tidb"
 	app.Usage = "Execute SQL in TiDB and MySQL and returns the results"
 	app.Description = "Used to compare the result different in MySQL and TiDB for the same SQL statement"
 	app.Version = "0.0.1"
 	app.Flags = []cli.Flag{
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  "mysql.host",
 			Value: "127.0.0.1",
 			Usage: "MySQL host",
 		},
-		cli.IntFlag{
+		&cli.IntFlag{
 			Name:  "mysql.port",
 			Value: 3306,
 			Usage: "MySQL port",
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  "mysql.user",
 			Value: "root",
 			Usage: "MySQL username",
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  "mysql.password",
 			Value: "",
 			Usage: "MySQL password",
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  "mysql.db",
-			Value: "test",
+			Value: "",
 			Usage: "MySQL database",
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  "mysql.options",
 			Value: "charset=utf8mb4",
 			Usage: "MySQL DSN options",
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  "tidb.host",
 			Value: "127.0.0.1",
 			Usage: "TiDB host",
 		},
-		cli.IntFlag{
+		&cli.IntFlag{
 			Name:  "tidb.port",
 			Value: 4000,
 			Usage: "TiDB port",
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  "tidb.user",
 			Value: "root",
 			Usage: "TiDB username",
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  "tidb.password",
 			Value: "",
 			Usage: "TiDB password",
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  "tidb.db",
-			Value: "test",
+			Value: "",
 			Usage: "TiDB database",
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  "tidb.options",
 			Value: "charset=utf8mb4",
 			Usage: "TiDB DSN options",
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  "log.diff",
 			Value: "",
 			Usage: "Log all query diff to file",
@@ -107,7 +110,49 @@ func dsn(dialect string, ctx *cli.Context) string {
 	)
 }
 
+func initConfig(ctx *cli.Context) error {
+	err := os.MkdirAll(filepath.Join(config.TiDiffPath), os.ModePerm)
+	if err != nil {
+		return err
+	}
+	_, err = os.Stat(config.TiDiffConfigPath)
+	if err != nil && os.IsNotExist(err) {
+		file, err := os.Create(config.TiDiffConfigPath)
+		if err != nil {
+			return err
+		}
+		if err := file.Close(); err != nil {
+			return err
+		}
+	}
+
+	b, err := ioutil.ReadFile(config.TiDiffConfigPath)
+	if err != nil {
+		return err
+	}
+
+	lines := strings.Split(string(b), "\n")
+	for _, line := range lines {
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		parts[0] = strings.TrimSpace(parts[0])
+		parts[1] = strings.TrimSpace(parts[1])
+		if ctx.IsSet(parts[0]) {
+			continue
+		}
+		if err := ctx.Set(parts[0], parts[1]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func serve(ctx *cli.Context) error {
+	if err := initConfig(ctx); err != nil {
+		return err
+	}
 	mysql, err := sql.Open("mysql", dsn("mysql", ctx))
 	if err != nil {
 		return err
@@ -119,10 +164,10 @@ func serve(ctx *cli.Context) error {
 	exec := executor.NewExecutor(mysql, tidb)
 
 	// Command line mode
-	if args := ctx.Args(); len(args) > 0 {
+	if args := ctx.Args(); args.Len() > 0 {
 		mysqlAddr := fmt.Sprintf("%v:%v", ctx.String("mysql.host"), ctx.Int("mysql.port"))
 		tidbAddr := fmt.Sprintf("%v:%v", ctx.String("tidb.host"), ctx.Int("tidb.port"))
-		query := strings.Join(args, " ")
+		query := strings.Join(args.Slice(), " ")
 		mysqlResult, tidbResult, err := exec.Query(query)
 		if err != nil {
 			return err

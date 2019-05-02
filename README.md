@@ -54,3 +54,22 @@ You can use command line mode as downstream pipeline, e.g: `randgen | xargs tidi
 
 1. `create table ttt(a bigint(20) not null auto_increment primary key, b bigint(20), c varchar(10))`
 2. `! {{$count:=count 20}} insert into ttt values {{range $index := $count}} (NULL, '{{int 10 100}}', '{{varchar 10}}'){{if head $index $count}},{{end}}{{end}}`
+
+## Config file
+
+You can provide default value from config file `~/.config/tidiff/config`
+
+```
+mysql.host = 192.168.4.30
+mysql.port = 3306
+mysql.user = root
+mysql.password = 12345678
+mysql.db = test
+mysql.options = charset=utf8mb4
+tidb..host = 192.168.4.31
+tidb..port = 4000
+tidb..user = root
+tidb..password = 1111
+tidb..db = test
+tidb..options = charset=utf8mb4
+```

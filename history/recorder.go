@@ -39,7 +39,7 @@ func rcfile() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, ".tidiff"), nil
+	return filepath.Join(home, ".config/tidiff/history"), nil
 }
 
 func (item *Item) String() string {

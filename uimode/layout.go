@@ -1,4 +1,4 @@
-package ui
+package uimode
 
 import (
 	"github.com/gdamore/tcell"

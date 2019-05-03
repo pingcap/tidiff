@@ -15,7 +15,7 @@ import (
 	"github.com/lonng/tidiff/config"
 	"github.com/lonng/tidiff/executor"
 	"github.com/lonng/tidiff/history"
-	"github.com/lonng/tidiff/ui"
+	"github.com/lonng/tidiff/uimode"
 	"github.com/sergi/go-diff/diffmatchpatch"
 	"gopkg.in/urfave/cli.v2"
 )
@@ -232,5 +232,5 @@ func serve(ctx *cli.Context) error {
 		defer diff.Close()
 	}
 
-	return ui.New(recorder, exec, mysql, tidb).Serve()
+	return uimode.New(recorder, exec, mysql, tidb).Serve()
 }

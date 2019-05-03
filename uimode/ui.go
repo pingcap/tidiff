@@ -1,4 +1,4 @@
-package ui
+package uimode
 
 import (
 	"database/sql"

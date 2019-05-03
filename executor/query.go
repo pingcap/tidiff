@@ -13,23 +13,29 @@ type QueryResult struct {
 	Rendered string
 	duration time.Duration
 	rowcount int
+	columns  int
 }
 
 func (result *QueryResult) Stat() string {
 	if result.Error != nil {
-		return fmt.Sprintf("failure (%.3f sec)", result.duration.Seconds())
+		return result.Error.Error()
+	}
+	if result.rowcount < 1 && result.columns < 1 {
+		return fmt.Sprintf("Query OK (%.3f sec)", result.duration.Seconds())
 	}
 	return fmt.Sprintf("%d row in set (%.3f sec)", result.rowcount, result.duration.Seconds())
 }
 
 func (result *QueryResult) Content() string {
 	if result.Error != nil {
-		return result.Error.Error()
+		return ""
 	}
 	cols, err := result.Result.Columns()
 	if err != nil {
-		return err.Error()
+		result.Error = err
+		return ""
 	}
+	result.columns = len(cols)
 	var allRows [][][]byte
 	for result.Result.Next() {
 		var columns = make([][]byte, len(cols))
@@ -39,13 +45,18 @@ func (result *QueryResult) Content() string {
 		}
 		err := result.Result.Scan(pointer...)
 		if err != nil {
-			return err.Error()
+			result.Error = err
+			return ""
 		}
 		allRows = append(allRows, columns)
 		result.rowcount++
 	}
+	if err := result.Result.Err(); err != nil {
+		result.Error = err
+		return ""
+	}
 	if result.rowcount < 1 {
-		return "Empty set"
+		return ""
 	}
 
 	// Calculate the max column length

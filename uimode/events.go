@@ -115,13 +115,19 @@ func (ui *UI) query(query string) {
 		tidbContent = newTiDBContent.String()
 	}
 
+	logQuery := query
 	if strings.HasPrefix(query, "!!") {
-		fmt.Fprintln(ui.mysqlPanel, "> "+mysqlResult.Rendered)
-		fmt.Fprintln(ui.tidbPanel, "> "+tidbResult.Rendered)
+		logQuery = mysqlResult.Rendered
 	}
-	fmt.Fprintln(ui.mysqlPanel, mysqlContent)
+	fmt.Fprintln(ui.mysqlPanel, fmt.Sprintf("MySQL(%s)> %s", ui.executor.MySQLConfig.Address(), logQuery))
+	fmt.Fprintln(ui.tidbPanel, fmt.Sprintf("TiDB(%s)> %s", ui.executor.TiDBConfig.Address(), logQuery))
+	if mysqlContent != "" {
+		fmt.Fprintln(ui.mysqlPanel, mysqlContent)
+	}
 	fmt.Fprintln(ui.mysqlPanel, mysqlResult.Stat()+"\n")
-	fmt.Fprintln(ui.tidbPanel, tidbContent)
+	if tidbContent != "" {
+		fmt.Fprintln(ui.tidbPanel, tidbContent)
+	}
 	fmt.Fprintln(ui.tidbPanel, tidbResult.Stat()+"\n")
 }
 

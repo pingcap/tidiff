@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"database/sql"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -99,15 +98,15 @@ func main() {
 	}
 }
 
-func dsn(dialect string, ctx *cli.Context) string {
-	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?%s",
-		ctx.String(dialect+".user"),
-		ctx.String(dialect+".password"),
-		ctx.String(dialect+".host"),
-		ctx.Int(dialect+".port"),
-		ctx.String(dialect+".db"),
-		ctx.String(dialect+".options"),
-	)
+func dbConfig(dialect string, ctx *cli.Context) *executor.Config {
+	return &executor.Config{
+		Host:     ctx.String(dialect + ".host"),
+		Port:     ctx.Int(dialect + ".port"),
+		User:     ctx.String(dialect + ".user"),
+		Password: ctx.String(dialect + ".password"),
+		DB:       ctx.String(dialect + ".db"),
+		Options:  ctx.String(dialect + ".options"),
+	}
 }
 
 func initConfig(ctx *cli.Context) error {
@@ -150,8 +149,6 @@ func initConfig(ctx *cli.Context) error {
 }
 
 func serveCLIMode(ctx *cli.Context, exec *executor.Executor) error {
-	mysqlAddr := fmt.Sprintf("%v:%v", ctx.String("mysql.host"), ctx.Int("mysql.port"))
-	tidbAddr := fmt.Sprintf("%v:%v", ctx.String("tidb.host"), ctx.Int("tidb.port"))
 	query := strings.Join(ctx.Args().Slice(), " ")
 	mysqlResult, tidbResult, err := exec.Query(query)
 	if err != nil {
@@ -184,11 +181,15 @@ func serveCLIMode(ctx *cli.Context, exec *executor.Executor) error {
 	if strings.HasPrefix(query, "!!") {
 		logQuery = mysqlResult.Rendered
 	}
-	fmt.Println(fmt.Sprintf("MySQL(%s)> %s", mysqlAddr, logQuery))
-	fmt.Println(mysqlContent)
+	fmt.Println(fmt.Sprintf("MySQL(%s)> %s", exec.MySQLConfig.Address(), logQuery))
+	if mysqlContent != "" {
+		fmt.Println(mysqlContent)
+	}
 	fmt.Println(mysqlResult.Stat() + "\n")
-	fmt.Println(fmt.Sprintf("TiDB(%s)> %s", tidbAddr, logQuery))
-	fmt.Println(tidbContent)
+	fmt.Println(fmt.Sprintf("TiDB(%s)> %s", exec.TiDBConfig.Address(), logQuery))
+	if tidbContent != "" {
+		fmt.Println(tidbContent)
+	}
 	fmt.Println(tidbResult.Stat() + "\n")
 	return nil
 }
@@ -197,15 +198,10 @@ func serve(ctx *cli.Context) error {
 	if err := initConfig(ctx); err != nil {
 		return err
 	}
-	mysql, err := sql.Open("mysql", dsn("mysql", ctx))
-	if err != nil {
+	exec := executor.NewExecutor(dbConfig("mysql", ctx), dbConfig("tidb", ctx))
+	if err := exec.Open(); err != nil {
 		return err
 	}
-	tidb, err := sql.Open("mysql", dsn("tidb", ctx))
-	if err != nil {
-		return err
-	}
-	exec := executor.NewExecutor(mysql, tidb)
 
 	// Command line mode
 	if args := ctx.Args(); args.Len() > 0 {

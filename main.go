@@ -22,7 +22,7 @@ import (
 
 func main() {
 	app := cli.App{}
-	app.Name = "tidb"
+	app.Name = "tidiff"
 	app.Usage = "Execute SQL in TiDB and MySQL and returns the results"
 	app.Description = "Used to compare the result different in MySQL and TiDB for the same SQL statement"
 	app.Version = "0.0.1"
@@ -149,6 +149,50 @@ func initConfig(ctx *cli.Context) error {
 	return nil
 }
 
+func serveCLIMode(ctx *cli.Context, exec *executor.Executor) error {
+	mysqlAddr := fmt.Sprintf("%v:%v", ctx.String("mysql.host"), ctx.Int("mysql.port"))
+	tidbAddr := fmt.Sprintf("%v:%v", ctx.String("tidb.host"), ctx.Int("tidb.port"))
+	query := strings.Join(ctx.Args().Slice(), " ")
+	mysqlResult, tidbResult, err := exec.Query(query)
+	if err != nil {
+		return err
+	}
+	defer mysqlResult.Close()
+	defer tidbResult.Close()
+	mysqlContent, tidbContent := mysqlResult.Content(), tidbResult.Content()
+	if mysqlResult.Error == nil && tidbResult.Error == nil {
+		green := color.New(color.FgGreen).SprintFunc()
+		red := color.New(color.FgRed).SprintFunc()
+		patch := diffmatchpatch.New()
+		diff := patch.DiffMain(mysqlContent, tidbContent, false)
+		var newMySQLContent, newTiDBContent bytes.Buffer
+		for _, d := range diff {
+			switch d.Type {
+			case diffmatchpatch.DiffEqual:
+				newMySQLContent.WriteString(d.Text)
+				newTiDBContent.WriteString(d.Text)
+			case diffmatchpatch.DiffDelete:
+				newMySQLContent.WriteString(red(d.Text))
+			case diffmatchpatch.DiffInsert:
+				newTiDBContent.WriteString(green(d.Text))
+			}
+		}
+		mysqlContent = newMySQLContent.String()
+		tidbContent = newTiDBContent.String()
+	}
+	logQuery := query
+	if strings.HasPrefix(query, "!!") {
+		logQuery = mysqlResult.Rendered
+	}
+	fmt.Println(fmt.Sprintf("MySQL(%s)> %s", mysqlAddr, logQuery))
+	fmt.Println(mysqlContent)
+	fmt.Println(mysqlResult.Stat() + "\n")
+	fmt.Println(fmt.Sprintf("TiDB(%s)> %s", tidbAddr, logQuery))
+	fmt.Println(tidbContent)
+	fmt.Println(tidbResult.Stat() + "\n")
+	return nil
+}
+
 func serve(ctx *cli.Context) error {
 	if err := initConfig(ctx); err != nil {
 		return err
@@ -165,43 +209,7 @@ func serve(ctx *cli.Context) error {
 
 	// Command line mode
 	if args := ctx.Args(); args.Len() > 0 {
-		mysqlAddr := fmt.Sprintf("%v:%v", ctx.String("mysql.host"), ctx.Int("mysql.port"))
-		tidbAddr := fmt.Sprintf("%v:%v", ctx.String("tidb.host"), ctx.Int("tidb.port"))
-		query := strings.Join(args.Slice(), " ")
-		mysqlResult, tidbResult, err := exec.Query(query)
-		if err != nil {
-			return err
-		}
-		defer mysqlResult.Close()
-		defer tidbResult.Close()
-		mysqlContent, tidbContent := mysqlResult.Content(), tidbResult.Content()
-		if mysqlResult.Error == nil && tidbResult.Error == nil {
-			green := color.New(color.FgGreen).SprintFunc()
-			red := color.New(color.FgRed).SprintFunc()
-			patch := diffmatchpatch.New()
-			diff := patch.DiffMain(mysqlContent, tidbContent, false)
-			var newMySQLContent, newTiDBContent bytes.Buffer
-			for _, d := range diff {
-				switch d.Type {
-				case diffmatchpatch.DiffEqual:
-					newMySQLContent.WriteString(d.Text)
-					newTiDBContent.WriteString(d.Text)
-				case diffmatchpatch.DiffDelete:
-					newMySQLContent.WriteString(red(d.Text))
-				case diffmatchpatch.DiffInsert:
-					newTiDBContent.WriteString(green(d.Text))
-				}
-			}
-			mysqlContent = newMySQLContent.String()
-			tidbContent = newTiDBContent.String()
-		}
-		fmt.Println(fmt.Sprintf("MySQL(%s)> %s", mysqlAddr, mysqlResult.Rendered))
-		fmt.Println(mysqlContent)
-		fmt.Println(mysqlResult.Stat() + "\n")
-		fmt.Println(fmt.Sprintf("TiDB(%s)> %s", tidbAddr, tidbResult.Rendered))
-		fmt.Println(tidbContent)
-		fmt.Println(tidbResult.Stat() + "\n")
-		return nil
+		return serveCLIMode(ctx, exec)
 	}
 
 	// User interface mode

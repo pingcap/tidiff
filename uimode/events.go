@@ -123,14 +123,15 @@ func (ui *UI) query(query string) {
 	fmt.Fprintln(ui.mysqlPanel, mysqlResult.Stat()+"\n")
 	fmt.Fprintln(ui.tidbPanel, tidbContent)
 	fmt.Fprintln(ui.tidbPanel, tidbResult.Stat()+"\n")
-	ui.recordHistory(query)
 }
 
 func (ui *UI) sqlStmtDone(key tcell.Key) {
 	if key != tcell.KeyEnter {
 		return
 	}
-	ui.query(strings.TrimSpace(ui.sqlStmt.GetText()))
+	query := strings.TrimSpace(ui.sqlStmt.GetText())
+	ui.query(query)
+	ui.recordHistory(query)
 }
 
 func (ui *UI) recordHistory(query string) {

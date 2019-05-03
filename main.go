@@ -232,5 +232,5 @@ func serve(ctx *cli.Context) error {
 		defer diff.Close()
 	}
 
-	return uimode.New(recorder, exec, mysql, tidb).Serve()
+	return uimode.New(recorder, exec).Serve()
 }

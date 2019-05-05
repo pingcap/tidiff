@@ -10,7 +10,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/lonng/tidiff/directive"
+	"github.com/pingcap/tidiff/directive"
 )
 
 type Executor struct {

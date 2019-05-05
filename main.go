@@ -11,10 +11,10 @@ import (
 
 	"github.com/fatih/color"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/lonng/tidiff/config"
-	"github.com/lonng/tidiff/executor"
-	"github.com/lonng/tidiff/history"
-	"github.com/lonng/tidiff/uimode"
+	"github.com/pingcap/tidiff/config"
+	"github.com/pingcap/tidiff/executor"
+	"github.com/pingcap/tidiff/history"
+	"github.com/pingcap/tidiff/uimode"
 	"github.com/sergi/go-diff/diffmatchpatch"
 	"gopkg.in/urfave/cli.v2"
 )

@@ -1,4 +1,4 @@
-module github.com/lonng/tidiff
+module github.com/pingcap/tidiff
 
 require (
 	github.com/BurntSushi/toml v0.3.1

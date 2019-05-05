@@ -1,8 +1,8 @@
 package uimode
 
 import (
-	"github.com/lonng/tidiff/executor"
-	"github.com/lonng/tidiff/history"
+	"github.com/pingcap/tidiff/executor"
+	"github.com/pingcap/tidiff/history"
 	"github.com/rivo/tview"
 )
 

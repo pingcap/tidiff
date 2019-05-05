@@ -18,14 +18,14 @@ tidiff 'select * from tt1000 limit 5'
 tidiff 'select * from tt1000 order by rand() limit 5'
 ```
 
-You can use command line mode as downstream pipeline, e.g: `randgen | xargs tididff`. SQL statement should be quote with `'` instead of `"`.
+You can use the command line mode as downstream pipeline, e.g: `randgen | xargs tididff`. The SQL statement should be quote with `'` instead of `"`.
 
 ![DEMO](./media/demo.png)
 
 ## UI Mode Shortcuts
 
 - `TAB` switch focus in different panel
-- `ESC` focus SQL input panel
+- `ESC` focus on SQL input panel
 - `UP`  focus on the previous history item
 - `DOWN` focus on the next history item
 - `ENTER` select current selected history item
@@ -34,7 +34,7 @@ You can use command line mode as downstream pipeline, e.g: `randgen | xargs tidi
 
 - Record the histories
 - Highlight the diff in result sets
-- Support `!` directive, which enable the template support for query, e.g:
+- Support `!` directive, which enable the template support for a query, e.g:
 
     `! {{$count:=count 10}} insert into t values {{range $index := $count}}({{int 10 100}}){{if head $index $count}},{{end}}{{end}}`
     `!! select period_add({{ int 10000 200000}}, {{int 100 10000}})` will show the generated sql, e.g: `period_add(108081, 7987)`
@@ -42,11 +42,11 @@ You can use command line mode as downstream pipeline, e.g: `randgen | xargs tidi
 - Template functions
 
     - `count n` returns a slice contains `n` elements
-    - `first index slice` returns whether `index` is the first element of the `slice`
-    - `last index slice`returns whether `index` is the last element of the `slice`
-    - `head index slice`returns whether `index` is the head element of the `slice`
-    - `tail index slice`returns whether `index` is the tail element of the `slice`
-    - `int min max`returns an int which in `[min, max)`
+    - `first index slice` returns true if `index` is the first element of the `slice`
+    - `last index slice`returns true if `index` is the last element of the `slice`
+    - `head index slice`returns true if `index` is the head element of the `slice`
+    - `tail index slice`returns true if `index` is the tail element of the `slice`
+    - `int min max`returns a rand integer which in the range `[min, max)`
     - `char length`returns a rand string which length is `length`
     - `varchar length`returns a rand string which length in `[length/2, length)`
     
@@ -57,7 +57,7 @@ You can use command line mode as downstream pipeline, e.g: `randgen | xargs tidi
 
 ## Config file
 
-You can provide default value from config file `~/.config/tidiff/config`
+You can provide default values from config file `~/.config/tidiff/config`
 
 ```
 mysql.host = 192.168.4.30
@@ -66,10 +66,10 @@ mysql.user = root
 mysql.password = 12345678
 mysql.db = test
 mysql.options = charset=utf8mb4
-tidb..host = 192.168.4.31
-tidb..port = 4000
-tidb..user = root
-tidb..password = 1111
-tidb..db = test
-tidb..options = charset=utf8mb4
+tidb.host = 192.168.4.31
+tidb.port = 4000
+tidb.user = root
+tidb.password = 1111
+tidb.db = test
+tidb.options = charset=utf8mb4
 ```

@@ -2,33 +2,35 @@
 
 A tool to compare the result set difference of the same query in TiDB/MySQL
 
-## Command Line Mode
+- Command Line Mode
 
-DEMO
+    DEMO
+    
+    ```sh
+    tidiff 'create database demo charset utf8mb4 collate utf8mb4_general_ci'
+    tidiff 'create table demo.tt10000 (a bigint(20) not null auto_increment primary key, b varchar(20) not null, c bigint(20))'
+    # OR
+    # tidiff --mysql.db demo --tidb.db demo 'create table tt10000 (a bigint(20) not null auto_increment primary key, b varchar(20) not null, c bigint(20))'
+    tidiff '! {{$count:=count 10000}} insert into demo.tt10000 values {{range $index := $count}} (NULL, "{{varchar 20}}", "{{int 100000 100000000}}"){{if head $index $count}},{{end}}{{end}}'
+    tidiff 'select count(*) as count, sum(c) from demo.tt10000'
+    tidiff 'select * from demo.tt10000 order by rand() limit 5'
+    ```
 
-```sh
-tidiff 'show tables'
-# ceate a table in test database
-tidiff 'create table tt1000 (a bigint(20) not null auto_increment primary key, b varchar(20) not null, c bigint(20))'
-# random generate 1000 rows in the `tt1000`
-tidiff '! {{$count:=count 20}} insert into tt1000 values {{range $index := $count}} (NULL, "{{varchar 20}}", "{{int 100000 100000000}}"){{if head $index $count}},{{end}}{{end}}'
-# same results
-tidiff 'select * from tt1000 limit 5'
-# results with diff
-tidiff 'select * from tt1000 order by rand() limit 5'
-```
+    The results of above commands
+    
+    ![](media/tidiff-guide-demo1.png)
 
-You can use the command line mode as downstream pipeline, e.g: `randgen | xargs tididff`. The SQL statement should be quote with `'` instead of `"`.
+    You can use the command line mode as downstream pipeline, e.g: `randgen | xargs tididff`. The SQL statement should be quote with `'` instead of `"`.
 
-![DEMO](./media/demo.png)
-
-## UI Mode Shortcuts
-
-- `TAB` switch focus in different panel
-- `ESC` focus on SQL input panel
-- `UP`  focus on the previous history item
-- `DOWN` focus on the next history item
-- `ENTER` select current selected history item
+- UI Mode Shortcuts
+    
+    - `TAB` switch focus in different panel
+    - `ESC` focus on SQL input panel
+    - `UP`  focus on the previous history item
+    - `DOWN` focus on the next history item
+    - `ENTER` select current selected history item
+    
+    ![DEMO](media/tidiff-guide-ui.png)
 
 ## Features
 

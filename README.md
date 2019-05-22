@@ -1,19 +1,17 @@
 # tidiff
 
-## Overview
+tidiff is a diff tool that sends the same SQL statement to TiDB and MySQL for processing, then compares the results and highlights the differences. You can use it in the following scenarios:  
 
-tidiff is a diff tool that sends the same SQL statement to TiDB and MySQL for processing, then compares the results and highlights the differences. You can use it in the following scenarios:    
 - Checking whether a SQL statement in TiDB is compatible with MySQL
 
 - Generating the same extra workload for both MySQL and TiDB when it comes to the case that a large amount of data (e.g. 1 million rows of data) is needed to reproduce the BUG.
-
 
 ## Sample usages
 
 The examples assume that you have already started the local MySQL and TiDB servers. The servers can be logged in with root username and an empty password. 
 
 ```
- ~ tidiff -h
+~ tidiff -h
 NAME:
 tidiff - Execute SQL in TiDB and MySQL and returns the results
 
@@ -27,7 +25,7 @@ DESCRIPTION:
 Used to compare the result different in MySQL and TiDB for the same SQL statement
 
 COMMANDS:
-    help, h  Shows a list of commands or help for one command
+help, h  Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
 --mysql.host value      MySQL host (default: "127.0.0.1")
@@ -47,35 +45,47 @@ GLOBAL OPTIONS:
 --version, -v           print the version (default: false)
 ```
 
-- Create a demo database for MySQL/TiDB
+Create a demo database for MySQL/TiDB
 
-  `tidiff 'create database demo charset utf8mb4 collate utf8mb4_general_ci'`
+```
+tidiff 'create database demo charset utf8mb4 collate utf8mb4_general_ci'
+```
 
-- Create a demo.tt10000 table for MySQL/TiDB
+Create a demo.tt10000 table for MySQL/TiDB
 
-   `tidiff 'create table demo.tt10000 (a bigint(20) not null auto_increment primary key, b varchar(20) not null, c bigint(20))'`
+```
+tidiff 'create table demo.tt10000 (a bigint(20) not null auto_increment primary key, b varchar(20) not null, c bigint(20))'
+```
 
-   or
-   
-   `tidiff --mysql.db demo --tidb.db demo 'create table tt10000 (a bigint(20) not null auto_increment primary key, b varchar(20) not null, c bigint(20))'`
+or
 
-- Insert 10,000 rows of data into the demo.tt10000 table using Golang template syntax
+```
+tidiff --mysql.db demo --tidb.db demo 'create table tt10000 (a bigint(20) not null auto_increment primary key, b varchar(20) not null, c bigint(20))'
+```
 
-   `tidiff '! {{$count:=count 10000}} insert into demo.tt10000 values {{range $index := $count}} (NULL, "{{varchar 20}}", "{{int 100000 100000000}}"){{if head $index $count}},{{end}}{{end}}'`
+Insert 10,000 rows of data into the demo.tt10000 table using Golang template syntax
 
-- Check the number of rows in the demo.tt10000 table and get the sum for column c
+```
+tidiff '! {{$count:=count 10000}} insert into demo.tt10000 values {{range $index := $count}} (NULL, "{{varchar 20}}", "{{int 100000 100000000}}"){{if head $index $count}},{{end}}{{end}}'
+```
 
-   `tidiff 'select count(*) as count, sum(c) from demo.tt10000'`
+Check the number of rows in the demo.tt10000 table and get the sum for column c
 
-- Select 5 random rows from the demo.tt10000 table
+```
+tidiff 'select count(*) as count, sum(c) from demo.tt10000'
+```
 
-   `tidiff 'select * from demo.tt10000 order by rand() limit 5'`
+Select 5 random rows from the demo.tt10000 table
 
-- Here is the screenshot of the operation above. The result differences are displayed in diff format.
+```
+tidiff 'select * from demo.tt10000 order by rand() limit 5'
+```
 
-  ![](media/tidiff-guide-demo1.png)
+Here is the screenshot of the operation above. The result differences are displayed in diff format.
 
-    You can use the command line mode as downstream pipeline, e.g: `randgen | xargs tididff`. The SQL statement should be quote with "` instead of `".
+![](media/tidiff-guide-demo1.png)
+
+You can use the command line mode as downstream pipeline, e.g: `randgen | xargs tididff`. The SQL statement should be quote with "` instead of `".
 
 ## Interactive Mode
 
@@ -87,116 +97,115 @@ tidiff provides an interactive mode which records SQL statements execution histo
 
 - If a SQL statement that includes some Golang template fails, the error part will be highlighted with `/* error message */` at the end of the statement.  
 
-    ![DEMO](media/tidiff-guide-ui.png)
+![DEMO](media/tidiff-guide-ui.png)
 
 - Shortcuts for interactive mode
 
-  - SQL Input Panel
+    - SQL Input Panel
 
-    - Use `Enter` to execute SQL statements. If a SQL statement begins with “!” , then Golang template is firstly used, where you can embed statements or expressions that generate random data. If a SQL statement begins with “!!”, the generated SQL statement will appear on the output panel. The SQL statement rendered will not be output in the output panel by default. 
+        - Use `Enter` to execute SQL statements. If a SQL statement begins with “!” , then Golang template is firstly used, where you can embed statements or expressions that generate random data. If a SQL statement begins with “!!”, the generated SQL statement will appear on the output panel. The SQL statement rendered will not be output in the output panel by default. 
 
-    - Use `TAB` to switch between panels. 
+        - Use `TAB` to switch between panels. 
 
-    - Use `Up/Dn` to fast shift the focus to the History panel.
+        - Use `Up/Dn` to fast shift the focus to the History panel.
 
-  - MySQL/TiDB Output Panel 
+    - MySQL/TiDB Output Panel 
 
-    - Use `Up/Dn` to turn page up or down.
+        - Use `Up/Dn` to turn page up or down.
 
-    - Use `TAB` to switch between panels.
+        - Use `TAB` to switch between panels.
     
-    - Use `ESC` and return to the SQL input panel. 
+        - Use `ESC` and return to the SQL input panel. 
 
-  - History Panel 
+    - History Panel 
 
-    - Use `Up/Dn` to fast shift the focus to the SQL input panel. 
+        - Use `Up/Dn` to fast shift the focus to the SQL input panel. 
     
-    - Select a history entry and use `Enter` to fill it in the SQL input panel for later editing and executing.
+        - Select a history entry and use `Enter` to fill it in the SQL input panel for later editing and executing.
 
-    - Use `ESC` and return to the SQL input panel.
+        - Use `ESC` and return to the SQL input panel.
  
-
 ## Golang template
 
 Here only introduces usages of “:=”, “range”, and “if”, and the functions provided in tidiff. All SQL statements must start with “!" so that tidiff can render them using the Golang template. 
 
-- :=
-Defines a template variable  $rand. The value must be çan integer within the range of 10000- 100000.
+- := Defines a template variable  $rand. The value must be çan integer within the range of 10000- 100000.
 
-  ```
-  $ tidiff '! {{$rand:=int 10000 100000}} select {{$rand}} < 50000'
-  MySQL(127.0.0.1:3306)> select 78081 < 50000
-  +---------------+
-  | 78081 < 50000 |
-  +---------------+
-  | 0             |
-  +---------------+
-  1 row in set (0.001 sec)
+```
+$ tidiff '! {{$rand:=int 10000 100000}} select {{$rand}} < 50000'
+MySQL(127.0.0.1:3306)> select 78081 < 50000
++---------------+
+| 78081 < 50000 |
++---------------+
+| 0             |
++---------------+
+1 row in set (0.001 sec)
 
-  TiDB(127.0.0.1:4000)> select 78081 < 50000
-  +---------------+
-  | 78081 < 50000 |
-  +---------------+
-  | 0             |
-  +---------------+
-  1 row in set (0.003 sec)
-  ```
+TiDB(127.0.0.1:4000)> select 78081 < 50000
++---------------+
+| 78081 < 50000 |
++---------------+
+| 0             |
++---------------+
+1 row in set (0.003 sec)
+```
 
 - Sample usages for `range` and `if` 
 
-  ```
-  $ tidiff '! {{$counter:=count 5}} select {{range $index:=$counter}} {{int 100 1000}} {{if head $index $counter}},{{end}}{{end}}'
-  MySQL(127.0.0.1:3306)> select  681 , 187 , 147 , 759 , 581
-  +-----------------------------+
-  | 681 | 187 | 147 | 759 | 581 |
-  +-----------------------------+
-  | 681 | 187 | 147 | 759 | 581 |
-  +-----------------------------+
-  1 row in set (0.002 sec)
+```
+$ tidiff '! {{$counter:=count 5}} select {{range $index:=$counter}} {{int 100 1000}} {{if head $index $counter}},{{end}}{{end}}'
+MySQL(127.0.0.1:3306)> select  681 , 187 , 147 , 759 , 581
++-----------------------------+
+| 681 | 187 | 147 | 759 | 581 |
++-----------------------------+
+| 681 | 187 | 147 | 759 | 581 |
++-----------------------------+
+1 row in set (0.002 sec)
 
-  TiDB(127.0.0.1:4000)> select  681 , 187 , 147 , 759 , 581
-  +-----------------------------+
-  | 681 | 187 | 147 | 759 | 581 |
-  +-----------------------------+
-  | 681 | 187 | 147 | 759 | 581 |
-  +-----------------------------+
-  1 row in set (0.005 sec)
-  ```
+TiDB(127.0.0.1:4000)> select  681 , 187 , 147 , 759 , 581
++-----------------------------+
+| 681 | 187 | 147 | 759 | 581 |
++-----------------------------+
+| 681 | 187 | 147 | 759 | 581 |
++-----------------------------+
+1 row in set (0.005 sec)
+```
 
-   Generate 5 random values through Golang template
+- Generate 5 random values through Golang template
 
-     a. First define a variable as a cycle counter `{{$counter:=count 5}}`
+    1. First define a variable as a cycle counter `{{$counter:=count 5}}`
     
-    b. Then use `{{range $index:=$counter}}` to traverse $counter
+    2. Then use `{{range $index:=$counter}}` to traverse $counter
     
-    c. Output a “,” if it’s not the last element of `$counter` until a valid  SQL statement is constructed.   
-    ```
-    tidiff '! {{$counter:=count 5}}
-    select
-        {{range $index:=$counter}}
-            {{int 100 1000}}
-            {{if head $index $counter}},{{end}}
-        {{end}}'
-    ```
+    3. Output a “,” if it’s not the last element of `$counter` until a valid  SQL statement is constructed.   
+    
+```
+tidiff '! {{$counter:=count 5}}
+select
+    {{range $index:=$counter}}
+        {{int 100 1000}}
+        {{if head $index $counter}},{{end}}
+    {{end}}'
+```
 
 
 - Built-in functions provided by tidiff
 
-  - `count n`: returns the counter with `n` elements 
+    - `count n`: returns the counter with `n` elements 
 
-  - `first $index $counter`: returns `true` if `$index` is the first element of `$counter`
+    - `first $index $counter`: returns `true` if `$index` is the first element of `$counter`
   
-  - `last $index $counter`: returns `true` if `$index` is the last element of `$counter`
+    - `last $index $counter`: returns `true` if `$index` is the last element of `$counter`
 
-  - `head $index $counter`: returns `true` if `$index` is not the last element of `$counter`
+    - `head $index $counter`: returns `true` if `$index` is not the last element of `$counter`
 
-  - `tail $index $counter`: returns `true` if `$index` is not the first element of `$counter`
+    - `tail $index $counter`: returns `true` if `$index` is not the first element of `$counter`
 
-  - `int min max`: returns an integer within the range of `[min, max)`
+    - `int min max`: returns an integer within the range of `[min, max)`
 
-  - `char length`: returns a random string with a length of  `length` 
+    - `char length`: returns a random string with a length of  `length` 
 
-  - `varchar length`: returns a random string with the length within the range of `[length/2, length)`
+    - `varchar length`: returns a random string with the length within the range of `[length/2, length)`
 
 ## Configuration
 

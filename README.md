@@ -97,7 +97,7 @@ tidiff provides an interactive mode which records SQL statements execution histo
 
 - If a SQL statement that includes some Golang template fails, the error part will be highlighted with `/* error message */` at the end of the statement.  
 
-![DEMO](media/tidiff-guide-ui.png)
+    ![DEMO](media/tidiff-guide-ui.png)
 
 - Shortcuts for interactive mode
 
@@ -131,15 +131,15 @@ Here only introduces usages of “:=”, “range”, and “if”, and the func
 
 - := Defines a template variable  $rand. The value must be çan integer within the range of 10000- 100000.
 
-```
-$ tidiff '! {{$rand:=int 10000 100000}} select {{$rand}} < 50000'
-MySQL(127.0.0.1:3306)> select 78081 < 50000
-+---------------+
-| 78081 < 50000 |
-+---------------+
-| 0             |
-+---------------+
-1 row in set (0.001 sec)
+    ```
+    $ tidiff '! {{$rand:=int 10000 100000}} select {{$rand}} < 50000'
+    MySQL(127.0.0.1:3306)> select 78081 < 50000
+    +---------------+
+    | 78081 < 50000 |
+    +---------------+
+    | 0             |
+    +---------------+
+    1 row in set (0.001 sec)
 
 TiDB(127.0.0.1:4000)> select 78081 < 50000
 +---------------+
@@ -148,28 +148,28 @@ TiDB(127.0.0.1:4000)> select 78081 < 50000
 | 0             |
 +---------------+
 1 row in set (0.003 sec)
-```
+    ```
 
 - Sample usages for `range` and `if` 
 
-```
-$ tidiff '! {{$counter:=count 5}} select {{range $index:=$counter}} {{int 100 1000}} {{if head $index $counter}},{{end}}{{end}}'
-MySQL(127.0.0.1:3306)> select  681 , 187 , 147 , 759 , 581
-+-----------------------------+
-| 681 | 187 | 147 | 759 | 581 |
-+-----------------------------+
-| 681 | 187 | 147 | 759 | 581 |
-+-----------------------------+
-1 row in set (0.002 sec)
+    ```
+    $ tidiff '! {{$counter:=count 5}} select {{range $index:=$counter}} {{int 100 1000}} {{if head $index $counter}},{{end}}{{end}}'
+    MySQL(127.0.0.1:3306)> select  681 , 187 , 147 , 759 , 581
+    +-----------------------------+
+    | 681 | 187 | 147 | 759 | 581 |
+    +-----------------------------+
+    | 681 | 187 | 147 | 759 | 581 |
+    +-----------------------------+
+    1 row in set (0.002 sec)
 
-TiDB(127.0.0.1:4000)> select  681 , 187 , 147 , 759 , 581
-+-----------------------------+
-| 681 | 187 | 147 | 759 | 581 |
-+-----------------------------+
-| 681 | 187 | 147 | 759 | 581 |
-+-----------------------------+
-1 row in set (0.005 sec)
-```
+    TiDB(127.0.0.1:4000)> select  681 , 187 , 147 , 759 , 581
+    +-----------------------------+
+    | 681 | 187 | 147 | 759 | 581 |
+    +-----------------------------+
+    | 681 | 187 | 147 | 759 | 581 |
+    +-----------------------------+
+    1 row in set (0.005 sec)
+   ```
 
 - Generate 5 random values through Golang template
 
@@ -179,14 +179,14 @@ TiDB(127.0.0.1:4000)> select  681 , 187 , 147 , 759 , 581
     
     3. Output a “,” if it’s not the last element of `$counter` until a valid  SQL statement is constructed.   
     
-```
-tidiff '! {{$counter:=count 5}}
-select
-    {{range $index:=$counter}}
-        {{int 100 1000}}
-        {{if head $index $counter}},{{end}}
-    {{end}}'
-```
+        ```
+        tidiff '! {{$counter:=count 5}}
+        select
+            {{range $index:=$counter}}
+                {{int 100 1000}}
+                {{if head $index $counter}},{{end}}
+            {{end}}'
+        ```
 
 
 - Built-in functions provided by tidiff

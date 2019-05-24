@@ -2,7 +2,7 @@
 
 ## Overview
 
-tidiff is a diff tool that sends the same SQL statement to TiDB and MySQL for processing, then compares the results and highlights the differences. You can use it in the following scenarios: 
+`tidiff` is a diff tool that sends the same SQL statement to TiDB and MySQL for processing, then compares the results and highlights the differences. You can use it in the following scenarios: 
 
 - Checking whether a SQL statement in TiDB is compatible with MySQL
 
@@ -11,7 +11,7 @@ tidiff is a diff tool that sends the same SQL statement to TiDB and MySQL for pr
 
 ## Sample usages
 
-The examples assume that you have already started the local MySQL and TiDB servers. The servers can be logged in with root username and an empty password. 
+The examples assume that you have already started the local MySQL and TiDB servers. The servers can be logged in with `root` username and an empty password. 
 
 ```
  ~ tidiff -h
@@ -48,11 +48,11 @@ GLOBAL OPTIONS:
 --version, -v           print the version (default: false)
 ```
 
-- Create a demo database for MySQL/TiDB
+- Create a `demo` database for MySQL/TiDB
 
   `tidiff 'create database demo charset utf8mb4 collate utf8mb4_general_ci'`
 
-- Create a demo.tt10000 table for MySQL/TiDB
+- Create a `demo.tt10000` table for MySQL/TiDB
 
    `tidiff 'create table demo.tt10000 (a bigint(20) not null auto_increment primary key, b varchar(20) not null, c bigint(20))'`
 
@@ -60,31 +60,31 @@ GLOBAL OPTIONS:
    
    `tidiff --mysql.db demo --tidb.db demo 'create table tt10000 (a bigint(20) not null auto_increment primary key, b varchar(20) not null, c bigint(20))'`
 
-- Insert 10,000 rows of data into the demo.tt10000 table using Golang template syntax
+- Insert 10,000 rows of data into the `demo.tt10000` table using Golang template syntax
 
    `tidiff '! {{$count:=count 10000}} insert into demo.tt10000 values {{range $index := $count}} (NULL, "{{varchar 20}}", "{{int 100000 100000000}}"){{if head $index $count}},{{end}}{{end}}'`
 
-- Check the number of rows in the demo.tt10000 table and get the sum for column c
+- Check the number of rows in the `demo.tt10000` table and get the sum for column `c`
 
    `tidiff 'select count(*) as count, sum(c) from demo.tt10000'`
 
-- Select 5 random rows from the demo.tt10000 table
+- Select 5 random rows from the `demo.tt10000` table
 
    `tidiff 'select * from demo.tt10000 order by rand() limit 5'`
 
-- Here is the screenshot of the operation above. The result differences are displayed in diff format.
+- Here is the screenshot of the operation above. The result differences are displayed in `diff` format.
 
   ![](media/tidiff-guide-demo1.png)
 
-    You can use the command line mode as downstream pipeline, e.g: `randgen | xargs tididff`. The SQL statement should be quote with "` instead of `".
+    You can use the command line mode as downstream pipeline, for example `randgen | xargs tididff`. The SQL statement should be quote with ` instead of `.
 
 ## Interactive Mode
 
-tidiff provides an interactive mode which records SQL statements execution history so as to run a SQL statement repeatedly. 
+`tidiff` provides an interactive mode which records SQL statements execution history so as to run a SQL statement repeatedly. 
 
-- To enable the interactive mode, enter `tidiff --mysql.db test --tidb.db test` without a SQL statement.
+- To enable the interactive mode, enter the `tidiff --mysql.db test --tidb.db test` without a SQL statement.
 
-- If the interactive mode includes `--log.diff` parameters like tidiff `--log.diff /path/to/diff.log`, then all the results will be saved into the log file. The difference will also be highlighted when you view the results using the `cat` command.  
+- If the interactive mode includes `--log.diff` parameters like `tidiff --log.diff /path/to/diff.log`, then all the results will be saved into the log file. The difference will also be highlighted when you view the results using the `cat` command.  
 
 - If a SQL statement that includes some Golang template fails, the error part will be highlighted with `/* error message */` at the end of the statement.  
 
@@ -94,11 +94,11 @@ tidiff provides an interactive mode which records SQL statements execution histo
 
   - SQL Input Panel
 
-    - Use `Enter` to execute SQL statements. If a SQL statement begins with “!” , then Golang template is firstly used, where you can embed statements or expressions that generate random data. If a SQL statement begins with “!!”, the generated SQL statement will appear on the output panel. The SQL statement rendered will not be output in the output panel by default. 
+    - Use `Enter` to execute SQL statements. If a SQL statement begins with `!` , then Golang template is firstly used, where you can embed statements or expressions that generate random data. If a SQL statement begins with `!!`, the generated SQL statement will appear on the output panel. The SQL statement rendered will not be output in the output panel by default. 
 
     - Use `TAB` to switch between panels. 
 
-    - Use `Up/Dn` to fast shift the focus to the History panel.
+    - Use `Up/Dn` to fast shift the focus to the `History` panel.
 
   - MySQL/TiDB Output Panel 
 
@@ -106,23 +106,22 @@ tidiff provides an interactive mode which records SQL statements execution histo
 
     - Use `TAB` to switch between panels.
     
-    - Use `ESC` and return to the SQL input panel. 
+    - Use `ESC` and return to the `SQL input` panel. 
 
   - History Panel 
 
-    - Use `Up/Dn` to fast shift the focus to the SQL input panel. 
+    - Use `Up/Dn` to fast shift the focus to the `SQL input` panel. 
     
-    - Select a history entry and use `Enter` to fill it in the SQL input panel for later editing and executing.
+    - Select a history entry and use `Enter` to fill it in the `SQL input` panel for later editing and executing.
 
-    - Use `ESC` and return to the SQL input panel.
+    - Use `ESC` and return to the `SQL input` panel.
  
 
 ## Golang template
 
-Here only introduces usages of `:=`, `range`, and `if`, and the functions provided in tidiff. All SQL statements must start with “!" so that tidiff can render them using the Golang template. 
+Here only introduces usages of `:=`, `range`, and `if`, and the functions provided in `tidiff`. All SQL statements must start with `!` so that `tidiff` can render them using the Golang template. 
 
-- :=
-Defines a template variable `$rand`. The value must be çan integer within the range of 10000- 100000.
+- `:=` Defines a template variable `$rand`. The value must be çan integer within the range of `10000- 100000`.
 
   ```
   $ tidiff '! {{$rand:=int 10000 100000}} select {{$rand}} < 50000'
@@ -170,7 +169,7 @@ Defines a template variable `$rand`. The value must be çan integer within the r
     
     b. Then use `{{range $index:=$counter}}` to traverse `$counter`
     
-    c. Output a “,” if it’s not the last element of `$counter` until a valid SQL statement is constructed.   
+    c. Output a `,` if it’s not the last element of `$counter` until a valid SQL statement is constructed.   
     ```
     tidiff '! {{$counter:=count 5}}
     select
@@ -181,7 +180,7 @@ Defines a template variable `$rand`. The value must be çan integer within the r
     ```
 
 
-- Built-in functions provided by tidiff
+- Built-in functions provided by `tidiff`
 
   - `count n`: returns the counter with `n` elements 
 
@@ -201,7 +200,7 @@ Defines a template variable `$rand`. The value must be çan integer within the r
 
 ## Configuration
 
-tidiff supports saving parameters to the configuration file as key-value pairs. The path of the configuration file is  `~/.config/tidiff/config`. Below is a sample configuration file: 
+`tidiff` supports saving parameters to the configuration file as key-value pairs. The path of the configuration file is  `~/.config/tidiff/config`. See the following sample configuration file: 
 
 ```
 mysql.host = 192.168.4.30

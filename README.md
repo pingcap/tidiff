@@ -85,7 +85,7 @@ GLOBAL OPTIONS:
 
     ![](media/tidiff-guide-demo1.png)
 
-    You can use the command line mode as downstream pipeline, for example `randgen | xargs tididff`. The SQL statement should be quote with `instead of `.
+    You can use the command line mode as downstream pipeline, for example `randgen | xargs tididff`. The SQL statement should be quote with `instead of`.
 
 ## Interactive Mode
 

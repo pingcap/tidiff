@@ -199,7 +199,7 @@ func serve(ctx *cli.Context) error {
 		return err
 	}
 	exec := executor.NewExecutor(dbConfig("mysql", ctx), dbConfig("tidb", ctx))
-	if err := exec.Open(); err != nil {
+	if err := exec.Open(executor.DefaultRetryCnt); err != nil {
 		return err
 	}
 

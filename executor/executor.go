@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"strings"
 	"sync/atomic"
 	"text/template"
@@ -12,6 +13,8 @@ import (
 
 	"github.com/pingcap/tidiff/directive"
 )
+
+const DefaultRetryCnt = 1
 
 type Executor struct {
 	MySQLConfig *Config
@@ -25,21 +28,49 @@ func NewExecutor(mysql, tidb *Config) *Executor {
 	return &Executor{MySQLConfig: mysql, TiDBConfig: tidb}
 }
 
-func (e *Executor) Open() error {
+func (e *Executor) Open(retryCnt int) error {
 	if atomic.AddInt32(&e.started, 1) != 1 {
 		return errors.New("executor started")
 	}
-	mysql, err := sql.Open("mysql", e.MySQLConfig.DSN())
+	mysql, err := openDBWithRetry("mysql", e.MySQLConfig.DSN(), retryCnt)
 	if err != nil {
 		return err
 	}
-	tidb, err := sql.Open("mysql", e.TiDBConfig.DSN())
+	tidb, err := openDBWithRetry("mysql", e.TiDBConfig.DSN(), retryCnt)
 	if err != nil {
 		return err
 	}
 	e.mysql = mysql
 	e.tidb = tidb
 	return nil
+}
+
+// openDBWithRetry opens a database specified by its database driver name and a
+// driver-specific data source name. And it will do some retries if the connection fails.
+func openDBWithRetry(driverName, dataSourceName string, retryCnt int) (mdb *sql.DB, err error) {
+	startTime := time.Now()
+	sleepTime := time.Millisecond * 500
+	for i := 0; i < retryCnt; i++ {
+		mdb, err = sql.Open(driverName, dataSourceName)
+		if err != nil {
+			fmt.Printf("open db %s failed, retry count %d err %v\n", dataSourceName, i, err)
+			time.Sleep(sleepTime)
+			continue
+		}
+		err = mdb.Ping()
+		if err == nil {
+			break
+		}
+		fmt.Printf("ping db %s failed, retry count %d err %v\n", dataSourceName, i, err)
+		mdb.Close()
+		time.Sleep(sleepTime)
+	}
+	if err != nil {
+		fmt.Printf("open db %s failed %v, take time %v\n", dataSourceName, err, time.Since(startTime))
+		return nil, err
+	}
+
+	return
 }
 
 func q(ctx context.Context, db *sql.DB, query string, ch chan *QueryResult) {

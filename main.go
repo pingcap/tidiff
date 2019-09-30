@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -94,7 +95,8 @@ func main() {
 	}
 	app.Action = serve
 	if err := app.Run(os.Args); err != nil {
-		log.Fatal(err)
+		println(err)
+		os.Exit(1)
 	}
 }
 
@@ -157,6 +159,7 @@ func serveCLIMode(ctx *cli.Context, exec *executor.Executor) error {
 	defer mysqlResult.Close()
 	defer tidbResult.Close()
 	mysqlContent, tidbContent := mysqlResult.Content(), tidbResult.Content()
+	var containsDiff bool
 	if mysqlResult.Error == nil && tidbResult.Error == nil {
 		green := color.New(color.FgGreen).SprintFunc()
 		red := color.New(color.FgRed).SprintFunc()
@@ -170,8 +173,10 @@ func serveCLIMode(ctx *cli.Context, exec *executor.Executor) error {
 				newTiDBContent.WriteString(d.Text)
 			case diffmatchpatch.DiffDelete:
 				newMySQLContent.WriteString(red(d.Text))
+				containsDiff = true
 			case diffmatchpatch.DiffInsert:
 				newTiDBContent.WriteString(green(d.Text))
+				containsDiff = true
 			}
 		}
 		mysqlContent = newMySQLContent.String()
@@ -191,6 +196,9 @@ func serveCLIMode(ctx *cli.Context, exec *executor.Executor) error {
 		fmt.Println(tidbContent)
 	}
 	fmt.Println(tidbResult.Stat() + "\n")
+	if containsDiff {
+		return errors.New("inconsistant result between TiDB and MySQL")
+	}
 	return nil
 }
 

@@ -143,6 +143,9 @@ func initConfig(ctx *cli.Context) error {
 		if ctx.IsSet(parts[0]) {
 			continue
 		}
+		if ctx.IsSet(parts[0]) {
+			continue
+		}
 		if err := ctx.Set(parts[0], parts[1]); err != nil {
 			return err
 		}

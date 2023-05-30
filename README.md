@@ -19,7 +19,7 @@ USAGE:
 tidiff [global options] command [command options] [arguments...]
 
 VERSION:
-0.0.1
+0.0.2
 
 DESCRIPTION:
 Used to compare the result different in MySQL and TiDB for the same SQL statement

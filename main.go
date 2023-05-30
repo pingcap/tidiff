@@ -25,7 +25,7 @@ func main() {
 	app.Name = "tidiff"
 	app.Usage = "Execute SQL in TiDB and MySQL and returns the results"
 	app.Description = "Used to compare the result different in MySQL and TiDB for the same SQL statement"
-	app.Version = "0.0.1"
+	app.Version = "0.0.2"
 	app.Flags = []cli.Flag{
 		&cli.StringFlag{
 			Name:  "mysql.host",
